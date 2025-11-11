@@ -11,7 +11,6 @@
     .navbar { background-color: #fff; border-bottom: 1px solid #ddd; }
     .navbar-brand { font-weight: bold; color: #444; }
     footer { text-align: center; padding: 12px; font-size: 14px; color: #777; background: #fff; border-top: 1px solid #ddd; margin-top: 50px; }
-
     .card { border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
     .table th { background-color: #f1f3f5; color: #333; }
     .note-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; min-height: 100px; font-size: 15px; width: 100%; }
@@ -34,10 +33,10 @@
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="rencana.html">🗒️ Rencana Kegiatan</a></li>
               <li><a class="dropdown-item" href="absen.html">📅 Absensi</a></li>
-              <li><a class="dropdown-item active" href="index.html">✏️ Log Kegiatan</a></li>
+              <li><a class="dropdown-item" href="index.html">✏️ Log Kegiatan</a></li>
             </ul>
           </li>
-          <li class="nav-item"><a class="nav-link" href="penilaian.html">📊 Penilaian</a></li>
+          <li class="nav-item"><a class="nav-link active" href="penilaian.html">📊 Penilaian</a></li>
           <li class="nav-item"><a class="nav-link" href="pengumuman.html">📢 Pengumuman</a></li>
 
           <!-- Fitur admin -->
@@ -138,184 +137,134 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-  $(function(){
-    // ambil data fresh dari localStorage setiap kali perlu
-    function readUsers() {
-      return JSON.parse(localStorage.getItem("users")) || {};
-    }
-    function writeUsers(obj) {
-      localStorage.setItem("users", JSON.stringify(obj));
-    }
+<script>
+$(function(){
+  const currentEmail = localStorage.getItem("currentUserEmail");
+  const users = JSON.parse(localStorage.getItem("users")) || {};
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const $userName = $("#userName");
 
-    const currentEmail = localStorage.getItem("currentUserEmail");
-    let users = readUsers();
-    const isAdmin = localStorage.getItem("isAdmin")==="true";
-    const $userName = $("#userName");
+  if (!currentEmail) {
+    window.location.replace("login.html");
+    return;
+  }
 
-    if (!currentEmail) {
-      // belum login → arahkan
-      window.location.replace("login.html");
+  // Tampilkan nama sesuai role
+  if (isAdmin) {
+    $userName.text("👑 Admin");
+    $(".admin-only").show();              // ✅ Tampilkan Data PKL
+    $("#adminSelectContainer").removeClass("d-none");
+    $("#savePenilaian").removeClass("d-none");
+  } else if (users[currentEmail]) {
+    $userName.text("👤 " + users[currentEmail].nama);
+  }
+
+  // Tombol logout
+  $("#logoutBtn").click(function(){
+    localStorage.removeItem("currentUserEmail");
+    localStorage.removeItem("isAdmin");
+    window.location.replace("login.html");
+  });
+
+  // ----- POPULATE DROPDOWN (admin) -----
+  let selectedEmail = isAdmin ? "" : currentEmail;
+  if (isAdmin) {
+    const $sel = $("#selectUser");
+    $sel.empty().append(`<option value="">-- Pilih Siswa --</option>`);
+    Object.keys(users).forEach(email=>{
+      if (!users[email] || !users[email].nama) return;
+      $sel.append(`<option value="${email}">${users[email].nama} — ${email}</option>`);
+    });
+
+    const first = $sel.find("option[value!='']").first().val();
+    if (first) {
+      $sel.val(first);
+      selectedEmail = first;
+      loadPenilaian(selectedEmail);
+    }
+  } else {
+    loadPenilaian(selectedEmail);
+  }
+
+  $("#selectUser").on("change", function(){
+    selectedEmail = $(this).val();
+    if (selectedEmail) loadPenilaian(selectedEmail);
+    else resetViewForAdminNoSelection();
+  });
+
+  function resetViewForAdminNoSelection(){
+    $("#absensiCell").html("");
+    $("#tugasCell").html("");
+    $("#noteContainer").html(`<div id="noteAdmin" class="note-box text-muted">Pilih siswa terlebih dahulu.</div>`);
+    $("#riwayatTable tbody").empty().append(`<tr><td colspan="5" class="text-muted text-center">Tidak ada siswa terpilih.</td></tr>`);
+  }
+
+  function renderPenilaianList(email){
+    const u = users[email];
+    const penilaianArr = (u && Array.isArray(u.penilaian)) ? u.penilaian : [];
+    const $body = $("#riwayatTable tbody");
+    $body.empty();
+    if (!penilaianArr.length) {
+      $body.append(`<tr><td colspan="5" class="text-muted">Belum ada penilaian.</td></tr>`);
       return;
     }
+    penilaianArr.slice().reverse().forEach(p=>{
+      $body.append(`<tr>
+        <td>${p.bulan || "-"}</td>
+        <td>${p.tugasKe || "-"}</td>
+        <td>${p.absensi ?? "-"}</td>
+        <td>${p.tugas ?? "-"}</td>
+        <td style="white-space:pre-wrap;">${p.note || "-"}</td>
+      </tr>`);
+    });
+  }
 
-    // tampilkan nama/admin
+  function loadPenilaian(email){
+    if (!email) return resetViewForAdminNoSelection();
+    const u = users[email] || {};
+    const penilaianArr = Array.isArray(u.penilaian) ? u.penilaian : [];
+    const latest = penilaianArr.length ? penilaianArr[penilaianArr.length-1] : { absensi: "-", tugas: "-", note: "Belum ada catatan." };
+
     if (isAdmin) {
-      $userName.text("👑 Admin");
-      $("#adminSelectContainer").removeClass("d-none");
-      $("#savePenilaian").removeClass("d-none");
+      $("#absensiCell").html(`<input type="number" id="inputAbsensi" class="form-control text-center" min="0" max="100" value="${latest.absensi==='-'?'':latest.absensi}" />`);
+      $("#tugasCell").html(`<input type="number" id="inputTugas" class="form-control text-center" min="0" max="100" value="${latest.tugas==='-'?'':latest.tugas}" />`);
+      $("#noteContainer").html(`<textarea id="inputNote" class="note-box" placeholder="Masukkan catatan admin...">${latest.note && latest.note!=='Belum ada catatan.' ? latest.note : ''}</textarea>`);
+      $("#savePenilaian").prop("disabled", false);
     } else {
-      const u = users[currentEmail] || {};
-      $userName.text("👤 " + (u.nama || "Siswa"));
+      $("#absensiCell").html(`<span class="badge bg-primary">${latest.absensi}</span>`);
+      $("#tugasCell").html(`<span class="badge bg-primary">${latest.tugas}</span>`);
+      $("#noteContainer").html(`<div id="noteAdmin" class="note-box text-muted">${latest.note}</div>`);
     }
 
-    // logout
-    $("#logoutBtn").click(function(){
-      localStorage.removeItem("currentUserEmail");
-      localStorage.removeItem("isAdmin");
-      window.location.replace("login.html");
+    renderPenilaianList(email);
+  }
+
+  $("#savePenilaian").click(function(){
+    const absVal = $("#inputAbsensi").val();
+    const tugasVal = $("#inputTugas").val();
+    const noteVal = $("#inputNote").val() || "";
+    const bulan = $("#bulanSelect").val() || "Tidak diketahui";
+    const tugasKe = parseInt($("#tugasKe").val()) || 1;
+
+    if (!selectedEmail) { alert("Pilih siswa terlebih dahulu."); return; }
+
+    if (!users[selectedEmail]) users[selectedEmail] = { gmail: selectedEmail, nama: "Unknown", logKegiatan: [], penilaian: [] };
+    if (!Array.isArray(users[selectedEmail].penilaian)) users[selectedEmail].penilaian = [];
+
+    users[selectedEmail].penilaian.push({
+      bulan,
+      tugasKe,
+      absensi: absVal===""?"-":absVal,
+      tugas: tugasVal===""?"-":tugasVal,
+      note: noteVal || "Tidak ada catatan"
     });
 
-    // ----- POPULATE DROPDOWN (admin) -----
-    let selectedEmail = isAdmin ? "" : currentEmail;
-    if (isAdmin) {
-      users = readUsers(); // fresh
-      const $sel = $("#selectUser");
-      $sel.empty().append(`<option value="">-- Pilih Siswa --</option>`);
-      Object.keys(users).forEach(email=>{
-        // skip admin account itself if present
-        if (!users[email] || !users[email].nama) return;
-        if (email === "elbandjayapkl1@gmail.com") return;
-        $sel.append(`<option value="${email}">${users[email].nama} — ${email}</option>`);
-      });
-
-      // pilih siswa pertama otomatis (jika ada)
-      const first = $sel.find("option[value!='']").first().val();
-      if (first) {
-        $sel.val(first);
-        selectedEmail = first;
-        loadPenilaian(selectedEmail);
-      }
-    } else {
-      loadPenilaian(selectedEmail);
-    }
-
-    // saat admin memilih user
-    $("#selectUser").on("change", function(){
-      selectedEmail = $(this).val();
-      if (selectedEmail) loadPenilaian(selectedEmail);
-      else resetViewForAdminNoSelection();
-    });
-
-    // reset jika admin belum pilih
-    function resetViewForAdminNoSelection(){
-      $("#absensiCell").html("");
-      $("#tugasCell").html("");
-      $("#noteContainer").html(`<div id="noteAdmin" class="note-box text-muted">Pilih siswa terlebih dahulu.</div>`);
-      $("#riwayatTable tbody").empty().append(`<tr><td colspan="5" class="text-muted text-center">Tidak ada siswa terpilih.</td></tr>`);
-    }
-
-    // ====== Render riwayat saja ======
-    function renderPenilaianList(email){
-      const usersNow = readUsers();
-      const u = usersNow[email];
-      const penilaianArr = (u && Array.isArray(u.penilaian)) ? u.penilaian : [];
-      const $body = $("#riwayatTable tbody");
-      $body.empty();
-      if (!penilaianArr.length) {
-        $body.append(`<tr><td colspan="5" class="text-muted">Belum ada penilaian.</td></tr>`);
-        return;
-      }
-      // tampilkan semua (urut dari terbaru ke lama)
-      penilaianArr.slice().reverse().forEach(p=>{
-        $body.append(`<tr>
-          <td>${p.bulan || "-"}</td>
-          <td>${p.tugasKe || "-"}</td>
-          <td>${p.absensi ?? "-"}</td>
-          <td>${p.tugas ?? "-"}</td>
-          <td style="white-space:pre-wrap;">${p.note || "-"}</td>
-        </tr>`);
-      });
-    }
-
-    // ====== Load penilaian (tampilkan latest + inputs for admin) ======
-    function loadPenilaian(email){
-      if (!email) return resetViewForAdminNoSelection();
-      users = readUsers(); // selalu baca fresh
-      const u = users[email] || {};
-      const penilaianArr = Array.isArray(u.penilaian) ? u.penilaian : [];
-      const latest = penilaianArr.length ? penilaianArr[penilaianArr.length-1] : { absensi: "-", tugas: "-", note: "Belum ada catatan." };
-
-      if (isAdmin) {
-        // tampilkan input untuk admin
-        $("#absensiCell").html(`<input type="number" id="inputAbsensi" class="form-control text-center" min="0" max="100" value="${latest.absensi==='-'?'':latest.absensi}" />`);
-        $("#tugasCell").html(`<input type="number" id="inputTugas" class="form-control text-center" min="0" max="100" value="${latest.tugas==='-'?'':latest.tugas}" />`);
-        $("#noteContainer").html(`<textarea id="inputNote" class="note-box" placeholder="Masukkan catatan admin...">${latest.note && latest.note!=='Belum ada catatan.' ? latest.note : ''}</textarea>`);
-        $("#savePenilaian").prop("disabled", false);
-      } else {
-        // tampilkan untuk siswa
-        $("#absensiCell").html(`<span class="badge bg-primary">${latest.absensi}</span>`);
-        $("#tugasCell").html(`<span class="badge bg-primary">${latest.tugas}</span>`);
-        $("#noteContainer").html(`<div id="noteAdmin" class="note-box text-muted">${latest.note}</div>`);
-      }
-
-      // render riwayat
-      renderPenilaianList(email);
-    }
-
-    // ====== Save penilaian (admin) ======
-    $("#savePenilaian").click(function(){
-      // ambil fresh users
-      users = readUsers();
-
-      if (!selectedEmail) {
-        alert("Pilih siswa terlebih dahulu.");
-        return;
-      }
-      // validasi input
-      const absVal = $("#inputAbsensi").val();
-      const tugasVal = $("#inputTugas").val();
-      const noteVal = $("#inputNote").val() || "";
-      const bulan = $("#bulanSelect").val() || "Tidak diketahui";
-      const tugasKe = parseInt($("#tugasKe").val()) || 1;
-
-      if (absVal === undefined || tugasVal === undefined) {
-        alert("Input nilai tidak ditemukan. Pastikan Anda memilih siswa.");
-        return;
-      }
-
-      // convert to string/number as desired
-      const absensi = absVal === "" ? "-" : String(absVal);
-      const tugas = tugasVal === "" ? "-" : String(tugasVal);
-
-      // pastikan struktur users[selectedEmail] ada
-      if (!users[selectedEmail]) users[selectedEmail] = { gmail: selectedEmail, nama: "Unknown", logKegiatan: [], absensi: [], penilaian: [] };
-
-      if (!Array.isArray(users[selectedEmail].penilaian)) users[selectedEmail].penilaian = [];
-
-      // tambah penilaian baru
-      users[selectedEmail].penilaian.push({
-        bulan,
-        tugasKe,
-        absensi,
-        tugas,
-        note: noteVal || "Tidak ada catatan"
-      });
-
-      // simpan
-      writeUsers(users);
-
-      // muat ulang UI untuk siswa yang dipilih
-      loadPenilaian(selectedEmail);
-
-      alert(`✅ Penilaian tersimpan: Bulan ${bulan} (Tugas ke-${tugasKe})`);
-    });
-
-    // jika bukan admin, pastikan nilai ditampilkan
-    if (!isAdmin) {
-      loadPenilaian(selectedEmail);
-    }
+    localStorage.setItem("users", JSON.stringify(users));
+    loadPenilaian(selectedEmail);
+    alert(`✅ Penilaian tersimpan: Bulan ${bulan} (Tugas ke-${tugasKe})`);
   });
-  </script>
+
+});
+</script>
 </body>
 </html>
