@@ -43,6 +43,10 @@
           </li>
           <li class="nav-item"><a class="nav-link" href="penilaian.html">📊 Penilaian</a></li>
           <li class="nav-item"><a class="nav-link" href="pengumuman.html">📢 Pengumuman</a></li>
+          <!-- MENU ADMIN: DATA PKL -->
+          <li class="nav-item admin-only" style="display:none;">
+            <a class="nav-link" href="data-pkl.html">📋 Data PKL</a>
+          </li>
         </ul>
 
         <ul class="navbar-nav">
@@ -90,7 +94,14 @@
       <h5 class="text-center text-primary mb-3">📋 Data Absensi Semua Siswa</h5>
       <table class="table table-bordered">
         <thead class="table-light">
-          <tr><th>Nama</th><th>Email</th><th>Tanggal</th><th>Masuk</th><th>Pulang</th></tr>
+          <tr>
+            <th>Nama</th>
+            <th>Email</th>
+            <th>PKL</th>
+            <th>Tanggal</th>
+            <th>Masuk</th>
+            <th>Pulang</th>
+          </tr>
         </thead>
         <tbody id="adminAbsenTable"></tbody>
       </table>
@@ -102,24 +113,23 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // ===== AMBIL DATA LOGIN =====
     const currentEmail = localStorage.getItem("currentUserEmail");
     const users = JSON.parse(localStorage.getItem("users")) || {};
     const userData = currentEmail ? users[currentEmail] : null;
     const isAdmin = localStorage.getItem("isAdmin") === "true";
 
-    if (!currentEmail) {
-      window.location.replace("login.html");
-    }
+    if (!currentEmail) window.location.replace("login.html");
 
     const userNavbar = document.getElementById("userNavbarName");
     const userNameEl = document.getElementById("userName");
 
+    // ===== ADMIN MENU NAVBAR =====
     if (isAdmin) {
       userNavbar.textContent = "👑 Admin";
       userNameEl.textContent = "👑 Admin Panel";
       document.getElementById("userAbsenSection").style.display = "none";
       document.getElementById("adminAbsenSection").style.display = "block";
+      document.querySelectorAll(".admin-only").forEach(el => el.style.display = "block");
     } else {
       userNavbar.textContent = "👤 " + (userData?.nama || "Siswa");
       userNameEl.textContent = "Nama: " + (userData?.nama || "-");
@@ -145,7 +155,6 @@
     if (!isAdmin) {
       const key = `absensiData_${currentEmail}`;
       let dataAbsen = JSON.parse(localStorage.getItem(key)) || [];
-
       const absenTable = document.querySelector("#absenTable tbody");
       const absenBtn = document.getElementById("absenBtn");
       const pulangBtn = document.getElementById("pulangBtn");
@@ -172,13 +181,9 @@
         const now = new Date();
         const tanggal = now.toLocaleDateString("id-ID");
         const waktu = now.toLocaleTimeString("id-ID");
-
         let today = dataAbsen.find(a => a.tanggal === tanggal);
         if (today && today.masuk) return alert("Anda sudah absen masuk hari ini!");
-
-        if (!today) {
-          dataAbsen.push({ tanggal, masuk: waktu, pulang: "" });
-        }
+        if (!today) dataAbsen.push({ tanggal, masuk: waktu, pulang: "" });
         localStorage.setItem(key, JSON.stringify(dataAbsen));
         alert("Absen masuk berhasil!");
         absenBtn.disabled = true;
@@ -189,11 +194,9 @@
         const now = new Date();
         const tanggal = now.toLocaleDateString("id-ID");
         const waktu = now.toLocaleTimeString("id-ID");
-
         let today = dataAbsen.find(a => a.tanggal === tanggal);
         if (!today || !today.masuk) return alert("Anda belum absen masuk!");
         if (today.pulang) return alert("Anda sudah absen pulang!");
-
         today.pulang = waktu;
         localStorage.setItem(key, JSON.stringify(dataAbsen));
         alert("Absen pulang berhasil!");
@@ -211,9 +214,7 @@
     if (isAdmin) {
       const adminTable = document.getElementById("adminAbsenTable");
       adminTable.innerHTML = "";
-
       let adaData = false;
-
       Object.keys(users).forEach(email => {
         const user = users[email];
         if (!user || !user.nama) return;
@@ -229,6 +230,7 @@
           tr.innerHTML = `
             <td>${user.nama}</td>
             <td>${email}</td>
+            <td>${user.pkl || '-'}</td>
             <td>${a.tanggal || '-'}</td>
             <td>${a.masuk || '-'}</td>
             <td>${a.pulang || '-'}</td>
@@ -239,7 +241,7 @@
       });
 
       if (!adaData) {
-        adminTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada data absensi dari siswa.</td></tr>`;
+        adminTable.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada data absensi dari siswa.</td></tr>`;
       }
     }
   </script>
