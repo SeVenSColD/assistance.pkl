@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Log Kegiatan - PKL Project</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background-color: #f8f8f8; border-bottom: 1px solid #ddd; }
+    .navbar-brand { font-weight: bold; color: #444; }
+    footer { text-align: center; padding: 10px; font-size: 14px; color: #666; border-top: 1px solid #ddd; background: #f8f8f8; margin-top: 50px; }
+    .btn-tambah { background-color: #0d6efd; color: #fff; }
+  </style>
+</head>
+
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">PKL Project</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="index.html">🏠 Beranda</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">📝 Input Kegiatan</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="rencana.html">🗒️ Rencana Kegiatan</a></li>
+              <li><a class="dropdown-item" href="absen.html">📅 Absensi</a></li>
+              <li><a class="dropdown-item active" href="index.html">✏️ Log Kegiatan</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="penilaian.html">📊 Penilaian</a></li>
+          <li class="nav-item"><a class="nav-link" href="pengumuman.html">📢 Pengumuman</a></li>
+
+          <!-- Fitur admin -->
+          <li class="nav-item admin-only" style="display:none;">
+            <a class="nav-link" href="data-pkl.html">📋 Data PKL</a>
+          </li>
+        </ul>
+
+        <!-- Nama & tombol logout -->
+        <ul class="navbar-nav">
+          <li class="nav-item"><a id="userName" class="nav-link fw-bold" href="#">👤 Siswa</a></li>
+          <li class="nav-item"><a id="logoutBtn" class="nav-link text-danger" href="#">🚪 Keluar</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== NOTIFIKASI PENGUMUMAN ===== -->
+  <div id="bannerPengumuman" class="alert alert-warning text-center m-0" style="display:none;"></div>
+
+  <!-- ===== BREADCRUMB ===== -->
+  <div class="container mt-3">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Data Log Kegiatan</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ===== TABEL ===== -->
+  <div class="container mt-2">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title mb-0">Kegiatan</h5>
+          <button id="tambahBtn" class="btn btn-sm btn-tambah">➕ Tambah Log Kegiatan</button>
+        </div>
+
+        <table id="dataLog" class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jam Mulai</th>
+              <th>Jam Selesai</th>
+              <th>Uraian Kegiatan</th>
+              <th>Sarana</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="text-end mt-3">
+          <button id="selesaiBtn" class="btn btn-success d-none">✔️ Selesai</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Copyright © 2025 | PKL Project</footer>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+  <script>
+  $(document).ready(function() {
+    const currentEmail = localStorage.getItem("currentUserEmail");
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    const userData = currentEmail ? users[currentEmail] : null;
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+
+    // Jika belum login arahkan ke login
+    if (!currentEmail) {
+      window.location.replace("login.html");
+      return;
+    }
+
+    // Tampilkan nama sesuai role
+    if (isAdmin) {
+      $("#userName").text("👑 Admin");
+      $(".admin-only").show();
+    } else if (userData) {
+      $("#userName").text("👤 " + userData.nama);
+    } else {
+      window.location.replace("login.html");
+      return;
+    }
+
+    // Tombol logout
+    $("#logoutBtn").on("click", function() {
+      localStorage.removeItem("currentUserEmail");
+      localStorage.removeItem("isAdmin");
+      window.location.replace("login.html");
+    });
+
+    // ====== DATA LOG KEGIATAN ======
+    const table = $('#dataLog').DataTable();
+    const savedData = userData && userData.logKegiatan ? userData.logKegiatan : [];
+
+    savedData.forEach(row => {
+      table.row.add([
+        row.tanggal,
+        row.mulai,
+        row.selesai,
+        row.uraian,
+        row.sarana,
+        `<button class="btn btn-sm btn-warning edit-btn">Edit</button>
+         <button class="btn btn-sm btn-danger hapus-btn">Hapus</button>`
+      ]).draw(false);
+    });
+
+    $("#tambahBtn").on("click", function() {
+      table.row.add([
+        `<input type="date" class="form-control">`,
+        `<input type="time" class="form-control">`,
+        `<input type="time" class="form-control">`,
+        `<input type="text" class="form-control" placeholder="Uraian kegiatan...">`,
+        `<input type="text" class="form-control" placeholder="Sarana...">`,
+        `<button class="btn btn-sm btn-danger hapus-btn">Hapus</button>`
+      ]).draw(false);
+      $("#selesaiBtn").removeClass("d-none");
+    });
+
+    $('#dataLog tbody').on('click', '.hapus-btn', function() {
+      table.row($(this).parents('tr')).remove().draw(false);
+      simpanData();
+    });
+
+    $('#dataLog tbody').on('click', '.edit-btn', function() {
+      const row = table.row($(this).parents('tr'));
+      const data = row.data();
+      const editableRow = [
+        `<input type="date" class="form-control" value="${data[0]}">`,
+        `<input type="time" class="form-control" value="${data[1]}">`,
+        `<input type="time" class="form-control" value="${data[2]}">`,
+        `<input type="text" class="form-control" value="${data[3]}">`,
+        `<input type="text" class="form-control" value="${data[4]}">`,
+        `<button class="btn btn-sm btn-danger hapus-btn">Hapus</button>`
+      ];
+      row.data(editableRow).draw(false);
+      $("#selesaiBtn").removeClass("d-none");
+    });
+
+    $("#selesaiBtn").on("click", function() {
+      $('#dataLog tbody tr').each(function() {
+        const inputs = $(this).find('input');
+        if (inputs.length > 0) {
+          const values = inputs.map(function() { return $(this).val(); }).get();
+          if (values.some(v => v.trim() !== "")) {
+            const rowData = [
+              values[0],
+              values[1],
+              values[2],
+              values[3],
+              values[4],
+              `<button class="btn btn-sm btn-warning edit-btn">Edit</button>
+               <button class="btn btn-sm btn-danger hapus-btn">Hapus</button>`
+            ];
+            table.row(this).data(rowData).draw(false);
+          } else {
+            table.row(this).remove().draw(false);
+          }
+        }
+      });
+      simpanData();
+      $("#selesaiBtn").addClass("d-none");
+    });
+
+    function simpanData() {
+      if (!isAdmin && userData) {
+        const semuaData = [];
+        table.rows().every(function() {
+          const d = this.data();
+          if (!d[0].includes("input")) {
+            semuaData.push({
+              tanggal: d[0],
+              mulai: d[1],
+              selesai: d[2],
+              uraian: d[3],
+              sarana: d[4]
+            });
+          }
+        });
+        userData.logKegiatan = semuaData;
+        users[currentEmail] = userData;
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+    }
+
+    // ===== PENGUMUMAN =====
+    const pengumuman = localStorage.getItem("pengumuman_admin");
+    if (pengumuman) {
+      $("#bannerPengumuman").text("📢 " + pengumuman).show();
+    }
+  });
+  </script>
+
+</body>
+</html>

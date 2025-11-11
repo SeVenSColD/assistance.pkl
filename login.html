@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login & Register PKL Project</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      width: 360px;
+      transition: all 0.3s ease;
+    }
+    h2 {
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    p {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    a {
+      color: #2563eb;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== LOGIN FORM ===== -->
+  <div class="container" id="loginForm">
+    <h2>Login PKL Project</h2>
+    <input type="email" id="loginEmail" placeholder="Email / Gmail" required />
+    <input type="password" id="loginPassword" placeholder="Password" required />
+    <button id="loginBtn">Masuk</button>
+    <p>Belum punya akun? <a id="showRegister">Daftar Sekarang</a></p>
+  </div>
+
+  <!-- ===== REGISTER FORM ===== -->
+  <div class="container hidden" id="registerForm">
+    <h2>Register PKL Project</h2>
+    <input type="text" id="regNama" placeholder="Nama Lengkap" required />
+    <input type="text" id="regSekolah" placeholder="Asal Sekolah" required />
+    <input type="text" id="regKejuruan" placeholder="Kejuruan" required />
+    <input type="email" id="regEmail" placeholder="Email / Gmail" required />
+    <input type="tel" id="regTelepon" placeholder="Nomor Telepon" required />
+    <input type="text" id="regPeriode" placeholder="Periode Magang (misal: Jan - Mar 2025)" required />
+    <input type="password" id="regPassword" placeholder="Buat Password" required />
+    <input type="password" id="regPassword2" placeholder="Ulangi Password" required />
+    <button id="registerBtn">Daftar</button>
+    <p>Sudah punya akun? <a id="showLogin">Login di sini</a></p>
+  </div>
+
+  <script>
+    // ====== CEK LOGIN OTOMATIS ======
+    const currentEmail = localStorage.getItem("currentUserEmail");
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    if (currentEmail && users[currentEmail]) {
+      window.location.replace("index.html");
+    }
+
+    // ====== TAMPIL / SEMBUNYI FORM ======
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    document.getElementById("showRegister").addEventListener("click", () => {
+      loginForm.classList.add("hidden");
+      registerForm.classList.remove("hidden");
+    });
+
+    document.getElementById("showLogin").addEventListener("click", () => {
+      registerForm.classList.add("hidden");
+      loginForm.classList.remove("hidden");
+    });
+
+    // ====== REGISTER USER BARU ======
+    document.getElementById("registerBtn").addEventListener("click", () => {
+      const nama = document.getElementById("regNama").value.trim();
+      const sekolah = document.getElementById("regSekolah").value.trim();
+      const kejuruan = document.getElementById("regKejuruan").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const telepon = document.getElementById("regTelepon").value.trim();
+      const periode = document.getElementById("regPeriode").value.trim();
+      const password = document.getElementById("regPassword").value.trim();
+      const password2 = document.getElementById("regPassword2").value.trim();
+
+      if (!nama || !sekolah || !kejuruan || !email || !telepon || !periode || !password || !password2) {
+        alert("Isi semua kolom terlebih dahulu!");
+        return;
+      }
+      if (password !== password2) {
+        alert("Password tidak cocok!");
+        return;
+      }
+
+      let users = JSON.parse(localStorage.getItem("users")) || {};
+      if (users[email]) {
+        alert("Email sudah terdaftar, silakan login.");
+        return;
+      }
+
+      users[email] = {
+        gmail: email,
+        nama,
+        sekolah,
+        kejuruan,
+        telepon,
+        periode,
+        password,
+        logKegiatan: [],
+        absensi: [],
+        penilaian: {}
+      };
+
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("currentUserEmail", email);
+      localStorage.setItem("isAdmin", "false");
+      alert("Registrasi berhasil! Anda akan diarahkan ke halaman utama.");
+      window.location.replace("index.html");
+    });
+
+    // ====== LOGIN (USER & ADMIN) ======
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      if (!email || !password) {
+        alert("Masukkan email dan password!");
+        return;
+      }
+
+      // Cek admin
+      if (email === "elbandjayapkl1@gmail.com" && password === "sams2025") {
+        localStorage.setItem("currentUserEmail", email);
+        localStorage.setItem("isAdmin", "true");
+        alert("Login sebagai ADMIN berhasil!");
+        window.location.replace("index.html");
+        return;
+      }
+
+      // Cek user biasa
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+      const user = users[email];
+
+      if (!user) {
+        alert("Akun tidak ditemukan. Silakan daftar terlebih dahulu.");
+        return;
+      }
+
+      if (user.password !== password) {
+        alert("Password salah!");
+        return;
+      }
+
+      localStorage.setItem("currentUserEmail", email);
+      localStorage.setItem("isAdmin", "false");
+      alert("Login berhasil!");
+      window.location.replace("index.html");
+    });
+  </script>
+
+</body>
+</html>
