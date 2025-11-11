@@ -12,6 +12,7 @@
     .navbar-brand { font-weight: bold; color: #444; }
     footer { text-align: center; padding: 10px; font-size: 14px; color: #666; border-top: 1px solid #ddd; background: #f8f8f8; margin-top: 50px; }
     .btn-tambah { background-color: #0d6efd; color: #fff; }
+    .admin-only { display: none; }
   </style>
 </head>
 <body>
@@ -35,18 +36,20 @@
           </li>
           <li class="nav-item"><a class="nav-link" href="penilaian.html">📊 Penilaian</a></li>
           <li class="nav-item"><a class="nav-link" href="pengumuman.html">📢 Pengumuman</a></li>
+          <li class="nav-item admin-only">
+            <a class="nav-link" href="data-pkl.html">📋 Data PKL</a>
+          </li>
         </ul>
         <ul class="navbar-nav">
-          <li class="nav-item"><a id="userName" class="nav-link" href="#">👤 siswa</a></li>
+          <li class="nav-item"><a id="userName" class="nav-link" href="#">👤 Siswa</a></li>
           <li class="nav-item"><a id="logoutBtn" class="nav-link" href="#">🚪 Keluar</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
-<!-- ===== NOTIFIKASI PENGUMUMAN (OPSIONAL) ===== -->
-<div id="bannerPengumuman" class="alert alert-warning text-center m-0" style="display:none;"></div>
-
+  <!-- ===== NOTIFIKASI PENGUMUMAN ===== -->
+  <div id="bannerPengumuman" class="alert alert-warning text-center m-0" style="display:none;"></div>
 
   <!-- ===== BREADCRUMB ===== -->
   <div class="container mt-3">
@@ -115,44 +118,45 @@
   <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
   <script>
+    // ===== Inisialisasi User & Admin =====
+    const currentEmail = localStorage.getItem("currentUserEmail");
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
 
-    const userNameEl = document.getElementById("userName");
-
-    if (isAdmin) {
-    userNameEl.textContent = "👑 Admin";
-    } else {
-    userNameEl.textContent = "👤 " + users[currentEmail].nama;
+    if (!currentEmail) {
+      window.location.replace("login.html");
     }
 
+    const userData = currentEmail ? users[currentEmail] : null;
 
+    // ===== Update Navbar =====
+    const userNameEl = document.getElementById("userName");
+    if (isAdmin) {
+      userNameEl.textContent = "👑 Admin";
+      document.querySelectorAll(".admin-only").forEach(el => el.style.display = "block");
+    } else if (userData && userData.nama) {
+      userNameEl.textContent = "👤 " + userData.nama;
+    } else {
+      userNameEl.textContent = "👤 Siswa";
+    }
 
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      localStorage.removeItem("currentUserEmail");
+      localStorage.removeItem("isAdmin");
+      window.location.replace("login.html");
+    });
+
+    // ===== DataTable & Rencana Kegiatan =====
     $(document).ready(function () {
-      const currentEmail = localStorage.getItem("currentUserEmail");
-      const users = JSON.parse(localStorage.getItem("users")) || {};
-      const userData = currentEmail ? users[currentEmail] : null;
-
-
-const isAdmin = localStorage.getItem("isAdmin") === "true";
-if (!currentEmail) {
-  window.location.replace("login.html");
-  return;
-}
-
-// Jika bukan admin dan datanya tidak ditemukan
-if (!isAdmin && (!users[currentEmail] || !users[currentEmail].nama)) {
-  window.location.replace("login.html");
-  return;
-}
-
-
-      $("#userName").text("👤 " + userData.nama);
-      $("#logoutBtn").on("click", function () {
-        localStorage.removeItem("currentUserEmail");
-        window.location.replace("login.html");
-      });
-
       const table = $("#tabelRencana").DataTable();
-      const rencanaList = userData.rencanaKegiatan || [];
+
+      // Pastikan hanya user valid yang bisa lanjut
+      if (!isAdmin && (!userData || !userData.nama)) {
+        window.location.replace("login.html");
+        return;
+      }
+
+      const rencanaList = userData?.rencanaKegiatan || [];
       rencanaList.forEach((r) => {
         table.row.add([r.bulan, r.kegiatan, `<button class='btn btn-sm btn-danger hapus-btn'>Hapus</button>`]).draw(false);
       });
@@ -166,6 +170,7 @@ if (!isAdmin && (!users[currentEmail] || !users[currentEmail].nama)) {
         }
 
         table.row.add([bulan, kegiatan, `<button class='btn btn-sm btn-danger hapus-btn'>Hapus</button>`]).draw(false);
+
         userData.rencanaKegiatan = userData.rencanaKegiatan || [];
         userData.rencanaKegiatan.push({ bulan, kegiatan });
         users[currentEmail] = userData;
@@ -175,6 +180,7 @@ if (!isAdmin && (!users[currentEmail] || !users[currentEmail].nama)) {
         $("#rencanaKegiatan").val("");
       });
 
+      // Hapus rencana
       $("#tabelRencana tbody").on("click", ".hapus-btn", function () {
         const row = table.row($(this).parents("tr"));
         const data = row.data();
@@ -183,28 +189,13 @@ if (!isAdmin && (!users[currentEmail] || !users[currentEmail].nama)) {
         localStorage.setItem("users", JSON.stringify(users));
         row.remove().draw(false);
       });
+
+      // Tampilkan pengumuman jika ada
+      const pengumuman = localStorage.getItem("pengumuman_admin");
+      if (pengumuman && $("#bannerPengumuman").length) {
+        $("#bannerPengumuman").text("📢 " + pengumuman).show();
+      }
     });
   </script>
-
-  <script>
-  $(document).ready(function(){
-    // Ambil data pengumuman dari localStorage
-    const pengumuman = localStorage.getItem("pengumuman_admin");
-
-    // Jika ada pengumuman dan elemen bannerPengumuman ada di halaman
-    if (pengumuman && $("#bannerPengumuman").length) {
-      $("#bannerPengumuman").text("📢 " + pengumuman).show();
-    }
-  });
-</script>
-
 </body>
-
-<script>
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
-  if (isAdmin) {
-    document.querySelectorAll(".admin-only").forEach(el => el.style.display = "block");
-  }
-</script>
-
 </html>
