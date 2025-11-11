@@ -19,18 +19,36 @@
 </head>
 
 <body>
-  <!-- NAVBAR -->
-  <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container">
       <a class="navbar-brand" href="index.html">PKL Project</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item"><a class="nav-link" href="index.html">🏠 Beranda</a></li>
-          <li class="nav-item"><a class="nav-link active" href="penilaian.html">📊 Penilaian</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">📝 Input Kegiatan</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="rencana.html">🗒️ Rencana Kegiatan</a></li>
+              <li><a class="dropdown-item" href="absen.html">📅 Absensi</a></li>
+              <li><a class="dropdown-item active" href="index.html">✏️ Log Kegiatan</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="penilaian.html">📊 Penilaian</a></li>
           <li class="nav-item"><a class="nav-link" href="pengumuman.html">📢 Pengumuman</a></li>
+
+          <!-- Fitur admin -->
+          <li class="nav-item admin-only" style="display:none;">
+            <a class="nav-link" href="data-pkl.html">📋 Data PKL</a>
+          </li>
         </ul>
+
+        <!-- Nama & tombol logout -->
         <ul class="navbar-nav">
-          <li class="nav-item"><a id="userName" class="nav-link" href="#">👤 siswa</a></li>
+          <li class="nav-item"><a id="userName" class="nav-link fw-bold" href="#">👤 Siswa</a></li>
           <li class="nav-item"><a id="logoutBtn" class="nav-link text-danger" href="#">🚪 Keluar</a></li>
         </ul>
       </div>
@@ -117,7 +135,9 @@
 
   <footer>Copyright © 2025 | PKL Project</footer>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
   $(function(){
     // ambil data fresh dari localStorage setiap kali perlu
