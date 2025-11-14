@@ -12,7 +12,63 @@
     .navbar-brand { font-weight: bold; color: #444; }
     footer { text-align: center; padding: 10px; font-size: 14px; color: #666; border-top: 1px solid #ddd; background: #f8f8f8; margin-top: 50px; }
     .btn-tambah { background-color: #0d6efd; color: #fff; }
+
+    /* ======= MOBILE FIXES ======= */
+@media (max-width: 576px) {
+
+  /* Navbar lebih rapi */
+  .navbar-brand {
+    font-size: 16px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+  }
+
+  /* Card padding diperkecil */
+  .card-body {
+    padding: 10px;
+  }
+
+  /* Tombol tambah */
+  .btn-tambah {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  /* Breadcrumb kecil */
+  .breadcrumb {
+    font-size: 13px;
+  }
+
+  /* Judul tabel */
+  h5.card-title {
+    font-size: 16px;
+  }
+
+  /* Supaya tabel tidak melebar keluar layar */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  /* Cell tabel lebih kecil */
+  table.dataTable td,
+  table.dataTable th {
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  /* Tombol CRUD */
+  .btn-sm {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+}
+
   </style>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+
 </head>
 
 <body>
@@ -74,19 +130,22 @@
           <button id="tambahBtn" class="btn btn-sm btn-tambah">➕ Tambah Log Kegiatan</button>
         </div>
 
-        <table id="dataLog" class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Jam Mulai</th>
-              <th>Jam Selesai</th>
-              <th>Uraian Kegiatan</th>
-              <th>Sarana</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+<div class="table-responsive">
+  <table id="dataLog" class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>Tanggal</th>
+        <th>Jam Mulai</th>
+        <th>Jam Selesai</th>
+        <th>Uraian Kegiatan</th>
+        <th>Sarana</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 
         <div class="text-end mt-3">
           <button id="selesaiBtn" class="btn btn-success d-none">✔️ Selesai</button>
@@ -134,7 +193,11 @@
     });
 
     // ====== DATA LOG KEGIATAN ======
-    const table = $('#dataLog').DataTable();
+    
+const table = $('#dataLog').DataTable({
+  responsive: true
+});
+
     const savedData = userData && userData.logKegiatan ? userData.logKegiatan : [];
 
     savedData.forEach(row => {
@@ -234,6 +297,10 @@
     }
   });
   </script>
+
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
 
 </body>
 </html>
